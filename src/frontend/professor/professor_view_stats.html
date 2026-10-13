@@ -1,0 +1,91 @@
+<h3>Προβολή Στατιστικών</h3>
+<p>Τα στατιστικά εμφανίζονται με τη χρήση γραφημάτων.</p>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Μέσος Χρόνος Περάτωσης</h5>
+                <canvas id="avgTimeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Μέσος Βαθμός</h5>
+                <canvas id="avgGradeChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Συνολικό Πλήθος Διπλωματικών</h5>
+                <canvas id="totalThesesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('backend/api/get_stats.php')
+        .then(response => response.json())
+        .then(stats => {
+            // Δεδομένα για τα γραφήματα
+            const avgTimeLabels = ['Επιβλέπων', 'Μέλος Τριμελούς'];
+            const avgTimeData = [stats.avg_time_supervisor, stats.avg_time_member];
+            const avgGradeLabels = ['Επιβλέπων', 'Μέλος Τριμελούς'];
+            const avgGradeData = [stats.avg_grade_supervisor, stats.avg_grade_member];
+            const totalThesesLabels = ['Επιβλέπων', 'Μέλος Τριμελούς'];
+            const totalThesesData = [stats.total_supervisor, stats.total_member];
+            
+            // Δημιουργία γραφήματος Μέσου Χρόνου
+            new Chart(document.getElementById('avgTimeChart'), {
+                type: 'bar',
+                data: { labels: avgTimeLabels, datasets: [{ label: 'Μέσος Χρόνος (μήνες)', data: avgTimeData, backgroundColor: ['#e0471d', '#555'] }] }
+            });
+            
+            // Δημιουργία γραφήματος Μέσου Βαθμού
+            new Chart(document.getElementById('avgGradeChart'), {
+                type: 'bar',
+                data: { labels: avgGradeLabels, datasets: [{ label: 'Μέσος Βαθμός', data: avgGradeData, backgroundColor: ['#e0471d', '#555'] }] }
+            });
+
+            // Δημιουργία γραφήματος Συνολικού Πλήθους
+            try {
+                // Έλεγχος αν υπάρχουν δεδομένα
+                const hasData = totalThesesData.some(value => value > 0);
+                
+                if (hasData) {
+                    // Δημιουργία pie chart με δεδομένα
+                    new Chart(document.getElementById('totalThesesChart'), {
+                        type: 'pie',
+                        data: { 
+                            labels: totalThesesLabels, 
+                            datasets: [{ 
+                                data: totalThesesData, 
+                                backgroundColor: ['#e0471d', '#555'] 
+                            }] 
+                        }
+                    });
+                } else {
+                    // Εμφάνιση μηνύματος όταν δεν υπάρχουν δεδομένα
+                    const canvas = document.getElementById('totalThesesChart');
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#666';
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Δεν υπάρχουν δεδομένα', canvas.width / 2, canvas.height / 2);
+                }
+            } catch (error) {
+                console.error('Error creating Total Theses Chart:', error);
+            }
+        })
+        .catch(error => {
+            console.error('Σφάλμα κατά τη φόρτωση των στατιστικών:', error);
+        });
+});
+</script>

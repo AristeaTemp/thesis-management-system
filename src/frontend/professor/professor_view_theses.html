@@ -1,0 +1,130 @@
+<h3>Προβολή Λίστας Διπλωματικών</h3>
+<p>Εμφάνιση όλων των διπλωματικών με τις οποίες έχετε σχέση.</p>
+
+<div class="row g-3 align-items-center mb-3">
+  <div class="col-auto">
+    <label for="status-filter" class="col-form-label">Κατάσταση:</label>
+  </div>
+  <div class="col-auto">
+    <select id="status-filter" class="form-select">
+      <option value="">Όλες</option>
+      <option value="under_assignment">Υπό Ανάθεση</option>
+      <option value="active">Ενεργή</option>
+      <option value="under_review">Υπό Εξέταση</option>
+      <option value="completed">Περατωμένη</option>
+      <option value="cancelled">Ακυρωμένη</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <label for="role-filter" class="col-form-label">Ρόλος:</label>
+  </div>
+  <div class="col-auto">
+    <select id="role-filter" class="form-select">
+      <option value="">Όλοι</option>
+      <option value="supervisor">Επιβλέπων</option>
+      <option value="member">Μέλος Τριμελούς</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button id="filter-btn" class="btn btn-primary">Φιλτράρισμα</button>
+  </div>
+  <div class="col-auto">
+    <button id="export-csv-btn" class="btn btn-success">Εξαγωγή CSV</button>
+    <button id="export-json-btn" class="btn btn-info">Εξαγωγή JSON</button>
+  </div>
+</div>
+
+<table class="table table-hover table-striped">
+  <thead>
+    <tr>
+      <th scope="col">Θέμα</th>
+      <th scope="col">Φοιτητής</th>
+      <th scope="col">Ρόλος</th>
+      <th scope="col">Κατάσταση</th>
+      <th scope="col">Ενέργειες</th>
+    </tr>
+  </thead>
+  <tbody id="theses-table-body">
+  </tbody>
+</table>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Συνάρτηση για την ανάκτηση και εμφάνιση των διπλωματικών εργασιών
+    function fetchTheses() {
+        // Λήψη τιμών από τα φίλτρα αναζήτησης
+        const status = document.getElementById('status-filter').value; // Κατάσταση διπλωματικής
+        const role = document.getElementById('role-filter').value; // Ρόλος καθηγητή
+        const tableBody = document.getElementById('theses-table-body');
+        
+        // Δημιουργία URL για το API με τις παραμέτρους φιλτραρίσματος
+        const url = `backend/api/get_professor_theses.php?status=${status}&role=${role}`;
+
+        // Εμφάνιση μηνύματος φόρτωσης
+        tableBody.innerHTML = '<tr><td colspan="5">Φόρτωση δεδομένων...</td></tr>';
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(theses => {
+                // Καθαρισμός του πίνακα για νέα δεδομένα
+                tableBody.innerHTML = '';
+                if (theses.length > 0) {
+                    // Δημιουργία γραμμών πίνακα για κάθε διπλωματική
+                    theses.forEach(thesis => {
+                        const row = document.createElement('tr');
+                        // Συμπλήρωση στοιχείων διπλωματικής στη γραμμή
+                        row.innerHTML = `
+                            <td>${thesis.title}</td>
+                            <td>${thesis.student_name || '—'}</td>
+                            <td class="text-capitalize">${thesis.role}</td>
+                            <td class="text-capitalize">${thesis.status.replace('_', ' ')}</td>
+                            <td><a href="dashboard.php?page=view_thesis_details&id=${thesis.thesis_id}" class="btn btn-sm btn-info">Προβολή</a></td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    // Μήνυμα όταν δεν υπάρχουν διπλωματικές
+                    tableBody.innerHTML = '<tr><td colspan="5">Δεν βρέθηκαν διπλωματικές.</td></tr>';
+                }
+            })
+            .catch(error => {
+                // Διαχείριση σφαλμάτων
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-danger">Σφάλμα φόρτωσης δεδομένων. Παρακαλώ δοκιμάστε ξανά.</td></tr>';
+                console.error('Σφάλμα ανάκτησης:', error);
+            });
+    }
+
+    // Αρχική φόρτωση δεδομένων κατά την εμφάνιση της σελίδας
+    fetchTheses();
+
+    // Προσθήκη listener για το κουμπί φιλτραρίσματος
+    document.getElementById('filter-btn').addEventListener('click', fetchTheses);
+    
+    // Event listeners για τα κουμπιά εξαγωγής δεδομένων
+    // Εξαγωγή σε μορφή CSV
+    document.getElementById('export-csv-btn').addEventListener('click', function() {
+        // Λήψη τρέχουσων τιμών φίλτρων
+        const status = document.getElementById('status-filter').value;
+        const role = document.getElementById('role-filter').value;
+        // Δημιουργία URL με παραμέτρους για εξαγωγή CSV
+        let url = 'backend/api/export_theses.php?format=csv';
+        if (status) url += '&status=' + encodeURIComponent(status);
+        if (role) url += '&role=' + encodeURIComponent(role);
+        window.location.href = url;
+    });
+    
+    document.getElementById('export-json-btn').addEventListener('click', function() {
+        const status = document.getElementById('status-filter').value;
+        const role = document.getElementById('role-filter').value;
+        let url = 'backend/api/export_theses.php?format=json';
+        if (status) url += '&status=' + encodeURIComponent(status);
+        if (role) url += '&role=' + encodeURIComponent(role);
+        window.location.href = url;
+    });
+});
+</script>

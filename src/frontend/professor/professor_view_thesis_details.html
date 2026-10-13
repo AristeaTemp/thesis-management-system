@@ -1,0 +1,354 @@
+<div id="loading-message">Φόρτωση δεδομένων...</div>
+
+<div id="thesis-content" class="container" style="display:none;">
+    <h3 id="thesis-title" class="mb-3"></h3>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Βασικές Πληροφορίες</strong></div>
+                <div class="card-body">
+                    <p><strong>Φοιτητής/τρια:</strong> <span id="student-name"></span></p>
+                    <p><strong>Κατάσταση:</strong> <span id="thesis-status" class="badge"></span></p>
+                    <p><strong>Τελικός Βαθμός:</strong> <span id="final-grade" class="fw-bold"></span></p>
+                    <div id="topic-description-section" style="display:none;">
+                        <p><strong>Περιγραφή Θέματος:</strong> 
+                            <a id="topic-description-link" href="#" target="_blank" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-file-earmark-pdf"></i> Προβολή Περιγραφής Θέματος
+                            </a>
+                        </p>
+                    </div>
+                    <div id="draft-section" style="display:none;">
+                        <p><strong>Πρόχειρο Κείμενο:</strong> 
+                            <a id="draft-link" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-file-earmark-pdf"></i> Προβολή Προχείρου
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><strong>Τριμελής Επιτροπή</strong></div>
+                <div class="card-body" id="committee-members"></div>
+            </div>
+
+            <div id="professor-actions-card" class="card mt-4" style="display:none;">
+                <div class="card-header"><strong>Διαθέσιμες Ενέργειες</strong></div>
+                <div class="card-body">
+                    
+                    <div id="under-assignment-actions" style="display:none;">
+                        <p>Αυτή η ανάθεση είναι προσωρινή μέχρι να ολοκληρωθεί η επιτροπή.</p>
+                        <button id="cancel-pre-assignment-btn" class="btn btn-warning">Αναίρεση Προσωρινής Ανάθεσης</button>
+                    </div>
+
+                    <div id="active-actions" style="display:none;">
+                         <p>Ως επιβλέπων, μπορείτε να αλλάξετε την κατάσταση της εργασίας σε "Υπό Εξέταση".</p>
+                         <button id="change-status-btn" class="btn btn-primary">Αλλαγή σε Υπό Εξέταση</button>
+                    </div>
+                    
+                    <div id="review-actions" style="display:none;">
+                        <h5>Καταχώρηση Βαθμού</h5>
+                        <form id="grade-form">
+                            <div class="mb-3">
+                                <label for="grade" class="form-label">Βαθμός (0-10)</label>
+                                <input type="number" class="form-control" id="grade" name="grade" min="0" max="10" step="0.5" required>
+                            </div>
+                            <button type="submit" class="btn btn-success">Υποβολή Βαθμού</button>
+                        </form>
+                    </div>
+                    <div id="graded-message" class="alert alert-info" style="display:none;">
+                        Έχετε ήδη υποβάλει τον βαθμό σας.
+                    </div>
+                    
+
+                    <div id="long-term-cancellation-action" style="display:none;">
+                        <hr>
+                        <h5>Οριστική Ακύρωση Ανάθεσης (μετά από 2 έτη)</h5>
+                        <form id="long-term-cancel-form">
+                            <div class="mb-3">
+                                <label for="gs_number_year" class="form-label">Αριθμός & Έτος Γ.Σ.</label>
+                                <input type="text" class="form-control" id="gs_number_year" name="gs_number_year" placeholder="π.χ. 15/2025" required>
+                            </div>
+                            <button type="submit" class="btn btn-danger">Οριστική Ακύρωση</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="notes-card" class="card mt-4" style="display:none;">
+                <div class="card-header"><strong>Ιδιωτικές Σημειώσεις (Ορατές μόνο σε εσάς)</strong></div>
+                <div class="card-body">
+                    <form id="note-form">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="note_text" name="note_text" rows="3" placeholder="Γράψτε τη σημείωσή σας εδώ..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-secondary">Αποθήκευση Σημείωσης</button>
+                    </form>
+                    <hr>
+                    <h5>Ιστορικό Σημειώσεων</h5>
+                    <ul id="notes-list" class="list-group list-group-flush"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><strong>Επιτροπή & Βαθμολογίες</strong></div>
+                <ul id="committee-list" class="list-group list-group-flush"></ul>
+            </div>
+
+            <div id="history-card" class="card mt-4" style="display:none;">
+                <div class="card-header"><strong>Χρονολόγιο Ενεργειών</strong></div>
+                <ul id="history-list" class="list-group list-group-flush"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // Λήψη παραμέτρων από το URL και αρχικοποίηση στοιχείων σελίδας
+    const urlParams = new URLSearchParams(window.location.search);
+    const thesisId = urlParams.get('id');
+    const loadingMessage = document.getElementById('loading-message');
+    const thesisContent = document.getElementById('thesis-content');
+
+    // Έλεγχος εγκυρότητας ID διπλωματικής
+    if (!thesisId) {
+        loadingMessage.textContent = 'Δεν βρέθηκε ID διπλωματικής.';
+        return;
+    }
+
+    
+    // Γενική συνάρτηση για κλήσεις στο API με διαχείριση σφαλμάτων
+    async function fetchJSON(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Σφάλμα δικτύου. Κωδικός: ${response.status}`);
+        return response.json();
+    }
+
+    // Φόρτωση και εμφάνιση των σημειώσεων της διπλωματικής εργασίας
+    function loadNotes(thesisId) {
+        fetchJSON(`backend/api/get_thesis_notes.php?thesis_id=${thesisId}`)
+            .then(notes => {
+                const list = document.getElementById('notes-list');
+                // Μετατροπή σημειώσεων σε HTML
+                list.innerHTML = notes.length > 0 ?
+                    notes.map(note => `<li class="list-group-item"><p class="mb-1">${note.note_text.replace(/\n/g, '<br>')}</p><small class="text-muted">${new Date(note.created_at).toLocaleString('el-GR')}</small></li>`).join('') :
+                    '<li class="list-group-item text-muted">Δεν υπάρχουν σημειώσεις.</li>';
+            }).catch(error => console.error("Σφάλμα φόρτωσης σημειώσεων:", error));
+    }
+
+    // Φόρτωση και εμφάνιση του ιστορικού αλλαγών κατάστασης της διπλωματικής
+    function loadHistory(thesisId) {
+        fetchJSON(`backend/api/get_thesis_history.php?thesis_id=${thesisId}`)
+            .then(history => {
+                const historyCard = document.getElementById('history-card');
+                const list = document.getElementById('history-list');
+                if (history.length > 0) {
+                    historyCard.style.display = 'block';
+                    list.innerHTML = history.map(entry => `<li class="list-group-item">Κατάσταση: <strong class="text-capitalize">${entry.new_status.replace(/_/g, ' ')}</strong><br><small class="text-muted">${new Date(entry.change_timestamp).toLocaleString('el-GR')}</small></li>`).join('');
+                }
+            }).catch(error => console.error("Error loading history:", error));
+    }
+
+    // Ρύθμιση Event Listeners για όλες τις φόρμες και κουμπιά
+    function setupEventListeners(thesisId) {
+        // Γενική συνάρτηση για χειρισμό υποβολής φορμών
+        function setupFormListener(formId, action, reload = true) {
+            const form = document.getElementById(formId);
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    formData.append('action', action);
+                    formData.append('thesis_id', thesisId);
+                    fetch('backend/handlers/handle_professor_actions.php', { method: 'POST', body: formData })
+                        .then(res => res.json()).then(result => {
+                            alert(result.message);
+                            if (result.success) {
+                                if (reload) location.reload();
+                                else { form.reset(); loadNotes(thesisId); }
+                            }
+                        }).catch(err => alert(`Σφάλμα: ${err}`));
+                });
+            }
+        }
+        
+        // Γενική συνάρτηση για χειρισμό κουμπιών
+        function setupButtonListener(buttonId, action, confirmMsg = null, redirectUrl = null) {
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.addEventListener('click', function() {
+                    if (confirmMsg && !confirm(confirmMsg)) return;
+                    const formData = new FormData();
+                    formData.append('action', action);
+                    formData.append('thesis_id', thesisId);
+                    fetch('backend/handlers/handle_professor_actions.php', { method: 'POST', body: formData })
+                        .then(res => res.json()).then(result => {
+                            alert(result.message);
+                            if (result.success) {
+                                if (redirectUrl) window.location.href = redirectUrl;
+                                else location.reload();
+                            }
+                        }).catch(err => alert(`Σφάλμα: ${err}`));
+                });
+            }
+        }
+
+        setupFormListener('grade-form', 'submit_grade');
+        setupFormListener('long-term-cancel-form', 'cancel_after_2_years');
+        setupFormListener('note-form', 'add_note', false);
+        setupButtonListener('cancel-pre-assignment-btn', 'cancel_pre_assignment', 'Είστε σίγουροι ότι θέλετε να αναιρέσετε την προσωρινή ανάθεση;', 'dashboard.php?page=view_theses');
+        setupButtonListener('change-status-btn', 'change_status_to_review', 'Είστε σίγουροι ότι θέλετε να αλλάξετε την κατάσταση σε "Υπό Εξέταση";');
+        
+    }
+
+
+    try {
+        // Φόρτωση δεδομένων διπλωματικής από το backend
+        const data = await fetchJSON(`backend/api/get_thesis_details.php?id=${thesisId}`);
+        if (!data || data.error) throw new Error(data.error || "Received no data.");
+
+        // Εμφάνιση Βασικών Πληροφοριών
+        document.getElementById('thesis-title').textContent = data.title;
+        document.getElementById('student-name').textContent = data.student_name || '—';
+        document.getElementById('final-grade').textContent = data.final_grade ? parseFloat(data.final_grade).toFixed(2) : '—';
+        
+        // Ενημέρωση κατάστασης 
+        const statusBadge = document.getElementById('thesis-status');
+        statusBadge.textContent = data.status.replace(/_/g, ' ');
+        const statusClasses = {'active': 'bg-success', 'completed': 'bg-primary', 'cancelled': 'bg-danger', 'under_assignment': 'bg-warning text-dark', 'under_review': 'bg-info text-dark'};
+        statusBadge.className = `badge ${statusClasses[data.status] || 'bg-secondary'}`;
+
+        // Εμφάνιση περιγραφής θέματος αν υπάρχει
+        if (data.final_text_link) {
+            document.getElementById('topic-description-section').style.display = 'block';
+            document.getElementById('topic-description-link').href = `backend/api/view_topic_file.php?topic_id=${thesisId}`;
+        }
+
+        // Εμφάνιση πρόχειρου κειμένου αν υπάρχει και η διπλωματική είναι "υπό εξέταση"
+        if (data.status === 'under_review' && data.draft_file_path) {
+            document.getElementById('draft-section').style.display = 'block';
+            document.getElementById('draft-link').href = `backend/api/view_draft_file.php?thesis_id=${thesisId}`;
+        }
+
+        // Εμφάνιση Επιτροπής Διπλωματικής
+        const committeeList = document.getElementById('committee-list');
+        committeeList.innerHTML = data.committee?.map(member => {
+            let statusHTML = '';
+            let datesHTML = '';
+            
+            // Κατάσταση πρόσκλησης για μέλη της επιτροπής
+            if (member.role === 'member' && member.invitation_status) {
+                if (member.invitation_status === 'pending') statusHTML = `<span class="badge bg-warning text-dark">Εν αναμονή</span>`;
+                else if (member.invitation_status === 'accepted') statusHTML = `<span class="badge bg-success">Αποδεκτή</span>`;
+                else if (member.invitation_status === 'rejected') statusHTML = `<span class="badge bg-danger">Απορριφθείσα</span>`;
+            }
+            
+            // Εμφάνιση βαθμού αν έχει βαθμολογήσει
+            const gradeText = member.grade !== null ? ` | Βαθμός: <strong>${member.grade}</strong>` : '';
+            return `<li class="list-group-item">${member.name} ${member.surname} (<strong>${member.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος'}</strong>)${gradeText} ${statusHTML}${datesHTML}</li>`;
+        }).join('') || '<li class="list-group-item text-muted">Δεν έχει οριστεί επιτροπή.</li>';
+
+        // Εμφάνιση/Απόκρυψη Ενεργειών ανάλογα με τον ρόλο και την κατάσταση
+        const actionsCard = document.getElementById('professor-actions-card');
+        
+        // Ενέργειες για επιβλέποντα καθηγητή
+        if (data.is_supervisor) {
+            // Ενέργειες για διπλωματικές "υπό ανάθεση"
+            if (data.status === 'under_assignment') { 
+                actionsCard.style.display = 'block'; 
+                document.getElementById('under-assignment-actions').style.display = 'block'; 
+            }
+            
+            // Ενέργειες για διπλωματικές "ενεργές"
+            if (data.status === 'active') {
+                actionsCard.style.display = 'block';
+                document.getElementById('active-actions').style.display = 'block';
+                // Εμφάνιση επιλογής ακύρωσης για μακροπρόθεσμες διπλωματικές (>2 χρόνια)
+                if (data.assignment_date) {
+                    const assignmentDate = new Date(data.assignment_date);
+                    if ((new Date() - assignmentDate) / (1000 * 60 * 60 * 24 * 365) > 2) {
+                        document.getElementById('long-term-cancellation-action').style.display = 'block';
+                    }
+                }
+            }
+            
+        }
+        
+        // Ενέργειες για μέλος επιτροπής
+        if (data.is_member && data.status === 'under_review') {
+            actionsCard.style.display = 'block';
+            document.getElementById(data.current_user_has_graded ? 'graded-message' : 'review-actions').style.display = 'block';
+        }
+        
+        // Εμφάνιση σημειώσεων για μέλη επιτροπής
+        if (data.is_member && ['active', 'under_review', 'under_assignment'].includes(data.status)) {
+            document.getElementById('notes-card').style.display = 'block';
+            loadNotes(thesisId);
+        }
+
+        // Εμφάνιση μελών επιτροπής
+        const committeeContainer = document.getElementById('committee-members');
+        if (data.committee_details) {
+            const members = data.committee_details.split(';;').map(member => {
+                const [fullName, role, status, responseDate] = member.split('|');
+                return { fullName, role, status, responseDate };
+            });
+            
+            let committeeHTML = '<ul class="list-group">';
+            members.forEach(member => {
+                let roleText = member.role === 'supervisor' ? 'Επιβλέπων' : 'Μέλος';
+                let statusHTML = '';
+                
+                if (member.role === 'member') {
+                    if (member.status === 'pending') {
+                        statusHTML = '<span class="badge bg-warning text-dark">Σε εκκρεμότητα</span>';
+                    } else if (member.status === 'accepted') {
+                        statusHTML = `
+                            <div>
+                                <span class="badge bg-success">Αποδεκτή</span>
+                                ${member.responseDate ? `<br><small class="text-muted mt-1">Στις ${member.responseDate}</small>` : ''}
+                            </div>`;
+                    } else if (member.status === 'rejected') {
+                        statusHTML = `
+                            <div>
+                                <span class="badge bg-danger">Απορρίφθηκε</span>
+                                ${member.responseDate ? `<br><small class="text-muted mt-1">Στις ${member.responseDate}</small>` : ''}
+                            </div>`;
+                    }
+                }
+                
+                committeeHTML += `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${member.fullName}</strong>
+                            <br>
+                            <small class="text-muted">${roleText}</small>
+                        </div>
+                        ${statusHTML}
+                    </li>`;
+            });
+            committeeHTML += '</ul>';
+            committeeContainer.innerHTML = committeeHTML;
+        } else {
+            committeeContainer.innerHTML = '<p class="text-muted">Δεν έχουν οριστεί μέλη επιτροπής ακόμα.</p>';
+        }
+
+
+        loadHistory(thesisId);
+
+
+        setupEventListeners(thesisId);
+
+        loadingMessage.style.display = 'none';
+        thesisContent.style.display = 'block';
+
+    } catch (error) {
+        console.error('CRITICAL ERROR:', error);
+        loadingMessage.innerHTML = `<div class="alert alert-danger">Παρουσιάστηκε κρίσιμο σφάλμα: ${error.message}.</div>`;
+    }
+});
+</script>

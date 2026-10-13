@@ -1,0 +1,13 @@
+# Local database credentials (copy src/config.example.php to src/config.php)
+src/config.php
+
+# Files uploaded while using the app
+src/backend/handlers/uploads/*
+!src/backend/handlers/uploads/.gitkeep
+
+# Editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

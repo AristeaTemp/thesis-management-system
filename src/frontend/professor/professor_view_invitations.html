@@ -1,0 +1,75 @@
+<!-- Σελίδα προβολής προσκλήσεων συμμετοχής σε τριμελή επιτροπή -->
+<h3>Προβολή Προσκλήσεων Συμμετοχής σε Τριμελή</h3>
+<p>Εδώ μπορείτε να δείτε και να απαντήσετε στις προσκλήσεις που έχετε λάβει.</p>
+<div id="invitations-message"></div>
+
+<!-- Πίνακας προσκλήσεων -->
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Θέμα Διπλωματικής</th>
+      <th scope="col">Επιβλέπων Καθηγητής</th>
+      <th scope="col">Ενέργειες</th>
+    </tr>
+  </thead>
+  <tbody id="invitations-table-body"></tbody>
+</table>
+
+<script>
+// Αρχικοποίηση σελίδας - φόρτωση προσκλήσεων
+document.addEventListener('DOMContentLoaded', function() { loadInvitations(); });
+
+// Συνάρτηση φόρτωσης προσκλήσεων από το API
+function loadInvitations() {
+    // Κλήση API για λήψη προσκλήσεων
+    fetch('backend/api/get_invitations.php')
+        .then(response => response.json())
+        .then(invitations => {
+            const tableBody = document.getElementById('invitations-table-body');
+            tableBody.innerHTML = '';
+            
+            if (invitations.length > 0) {
+                // Δημιουργία γραμμών πίνακα για κάθε πρόσκληση
+                invitations.forEach(inv => {
+                    const row = document.createElement('tr');
+                    row.dataset.thesisId = inv.thesis_id;
+                    row.dataset.professorId = inv.professor_id;
+                    row.innerHTML = `
+                        <td>${inv.thesis_title}</td>
+                        <td>${inv.supervisor_name}</td>
+                        <td>
+                            <button class='btn btn-sm btn-success' onclick="handleResponse(${inv.thesis_id}, ${inv.professor_id}, 'accepted')">Αποδοχή</button>
+                            <button class='btn btn-sm btn-danger' onclick="handleResponse(${inv.thesis_id}, ${inv.professor_id}, 'rejected')">Απόρριψη</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                // Μήνυμα όταν δεν υπάρχουν προσκλήσεις
+                tableBody.innerHTML = `<tr><td colspan='3'>Δεν υπάρχουν ενεργές προσκλήσεις.</td></tr>`;
+            }
+        });
+}
+
+// Συνάρτηση χειρισμού απάντησης (αποδοχή/απόρριψη)
+function handleResponse(thesisId, professorId, response) {
+    // Δημιουργία FormData για αποστολή δεδομένων
+    const formData = new FormData();
+    formData.append('thesis_id', thesisId);
+    formData.append('professor_id', professorId);
+    formData.append('response', response);
+    
+    // Αποστολή POST request στον handler
+    fetch('backend/handlers/handle_invitation_response.php', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Αφαίρεση γραμμής από τον πίνακα αν η απάντηση ήταν επιτυχής
+            document.querySelector(`tr[data-thesis-id='${thesisId}'][data-professor-id='${professorId}']`).remove();
+        } else {
+            // Εμφάνιση μηνύματος σφάλματος
+            alert(data.message || 'Σφάλμα');
+        }
+    });
+}
+</script>

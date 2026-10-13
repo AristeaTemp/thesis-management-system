@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <!-- Σελίδα επεξεργασίας υπαρχόντων θεμάτων διπλωματικών εργασιών -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Επεξεργασία Θέματος</title>
+    <!-- Bootstrap CSS με United theme για συνεπή εμφάνιση -->
+    <link href="https://bootswatch.com/5/united/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+    <h3>Επεξεργασία Θέματος Διπλωματικής Εργασίας</h3>
+    <!-- Μήνυμα φόρτωσης -->
+    <div id="loading-message">Φόρτωση δεδομένων...</div>
+    <!-- Φόρμα επεξεργασίας θέματος -->
+    <form id="edit-form" action="backend/handlers/handle_topic_edit.php" method="POST" enctype="multipart/form-data" style="display:none;">
+        <!-- Κρυφά πεδία για ID θέματος και υπάρχον PDF -->
+        <input type="hidden" name="theses_id" id="theses_id">
+        <input type="hidden" name="existing_pdf_link" id="existing_pdf_link">
+
+        <!-- Πεδίο τίτλου θέματος -->
+        <div class="mb-3">
+            <label for="title" class="form-label">Τίτλος Θέματος</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        <!-- Πεδίο περιγραφής/σύνοψης -->
+        <div class="mb-3">
+            <label for="description" class="form-label">Περιγραφή (Σύνοψη)</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+        </div>
+        <!-- Πεδίο επισύναψης PDF αρχείου -->
+        <div class="mb-3">
+            <label for="pdfFile" class="form-label">Αναλυτική Παρουσίαση (PDF)</label>
+            <!-- Πληροφορίες για υπάρχον PDF -->
+            <div id="existing-pdf-info"></div>
+            <input type="file" class="form-control" id="pdfFile" name="pdfFile">
+        </div>
+        <!-- Κουμπί υποβολής φόρμας -->
+        <button type="submit" class="btn btn-primary">Ενημέρωση Θέματος</button>
+    </form>
+
+    <!-- Bootstrap JavaScript για interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+    // Αρχικοποίηση σελίδας - φόρτωση δεδομένων θέματος για επεξεργασία
+    document.addEventListener('DOMContentLoaded', function() {
+        // Λήψη ID θέματος από URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const thesesId = urlParams.get('id');
+
+        // Έλεγχος αν υπάρχει ID θέματος
+        if (!thesesId) {
+            document.getElementById('loading-message').textContent = 'Μη έγκυρο αίτημα. Το ID του θέματος απουσιάζει.';
+            return;
+        }
+
+        // Κλήση API για λήψη λεπτομερειών θέματος
+        fetch(`backend/api/get_topic_details.php?id=${thesesId}`)
+            .then(response => response.json())
+            .then(topic => {
+                if (topic) {
+                    // Γέμισμα φόρμας με υπάρχοντα δεδομένα
+                    document.getElementById('theses_id').value = topic.id;
+                    document.getElementById('title').value = topic.title;
+                    document.getElementById('description').value = topic.description;
+                    document.getElementById('existing_pdf_link').value = topic.final_text_link;
+                    
+                    // Εμφάνιση πληροφοριών για υπάρχον PDF
+                    if (topic.final_text_link) {
+                        document.getElementById('existing-pdf-info').innerHTML = `<p>Υπάρχον αρχείο: <a href="backend/api/view_topic_file.php?topic_id=${topic.id}" target="_blank">Άνοιγμα PDF</a></p><p>Επιλέξτε νέο αρχείο για αντικατάσταση.</p>`;
+                    }
+                    
+                    // Εμφάνιση φόρμας και απόκρυψη μηνύματος φόρτωσης
+                    document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('edit-form').style.display = 'block';
+                } else {
+                    document.getElementById('loading-message').textContent = 'Δεν βρέθηκε θέμα με αυτό το ID.';
+                }
+            })
+            .catch(error => {
+                // Χειρισμός σφαλμάτων
+                console.error('Σφάλμα κατά τη φόρτωση των δεδομένων του θέματος:', error);
+                document.getElementById('loading-message').textContent = 'Σφάλμα κατά τη φόρτωση των δεδομένων του θέματος.';
+            });
+    });
+    </script>
+</body>
+</html>

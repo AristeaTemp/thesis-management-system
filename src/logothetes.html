@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ανακοινώσεις Παρουσίασης Διπλωματικών - Σύστημα Διπλωματικών</title>
+    
+    <link href="https://bootswatch.com/5/united/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* Στυλ για το header με gradient */
+        .header { background: linear-gradient(135deg, #e95420 0%, #c82333 100%); color: white; padding: 2rem 0; margin-bottom: 2rem; }
+        
+        /* Κουμπί login στην πάνω δεξιά γωνία */
+        .login-button { position: absolute; top: 1rem; right: 1rem; }
+        
+        /* Κουμπιά επιλογής μορφής */
+        .format-buttons .btn { margin-right: 0.5rem; min-width: 100px; }
+        
+        /* Φίλτρα ημερομηνίας με σκιά */
+        .date-filters { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        
+        /* Κάρτες ανακοινώσεων με hover effect */
+        .announcement-card { background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 1rem; transition: transform 0.2s; }
+        .announcement-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        
+        /* Header κάρτας ανακοίνωσης */
+        .announcement-header { background: linear-gradient(135deg, #e95420 0%, #c82333 100%); color: white; padding: 1rem; border-radius: 10px 10px 0 0; }
+        
+        /* Σώμα κάρτας ανακοίνωσης */
+        .announcement-body { padding: 1.5rem; }
+        
+        /* Πληροφορίες φοιτητή και επιβλέποντα */
+        .student-info, .supervisor-info { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        
+        /* Μηνύματα "δεν βρέθηκαν" και loading */
+        .no-announcements, .loading { text-align: center; padding: 3rem; color: #6c757d; }
+        
+        /* Spinner για loading */
+        .spinner-border { width: 3rem; height: 3rem; }
+    </style>
+</head>
+<body>
+    <div class="header position-relative">
+        <div class="container">
+            <div class="login-button">
+                <a href="login.html" class="btn btn-outline-light"><i class="bi bi-person-circle"></i> Login</a>
+            </div>
+            <h1 class="text-center mb-0"><i class="bi bi-megaphone"></i> Ανακοινώσεις Παρουσίασης Διπλωματικών</h1>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="format-buttons text-center">
+            <h5 class="mb-3">Επιλέξτε Μορφή Προβολής:</h5>
+            <button id="btn-json" class="btn btn-primary" onclick="setFormat('json')"><i class="bi bi-filetype-json"></i> JSON</button>
+            <button id="btn-xml" class="btn btn-outline-success" onclick="setFormat('xml')"><i class="bi bi-filetype-xml"></i> XML</button>
+        </div>
+
+        <div class="date-filters">
+            <h5 class="mb-3"><i class="bi bi-calendar-range"></i> Φίλτρα Ημερομηνίας</h5>
+            <div class="row">
+                <div class="col-md-4"><label for="startDate" class="form-label">Από:</label><input type="date" class="form-control" id="startDate"></div>
+                <div class="col-md-4"><label for="endDate" class="form-label">Έως:</label><input type="date" class="form-control" id="endDate"></div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary me-2" onclick="applyDateFilter()"><i class="bi bi-funnel"></i> Εφαρμογή</button>
+                    <button class="btn btn-outline-secondary" onclick="clearDateFilter()"><i class="bi bi-x-circle"></i> Καθαρισμός</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info text-center">
+            <strong>URL του Feed:</strong> <a id="feedLink" href="#" target="_blank"></a>
+        </div>
+
+        <div id="announcementsContainer"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Μεταβλητές για την τρέχουσα μορφή και φίλτρα ημερομηνίας
+        let currentFormat = 'json';        // Τρέχουσα μορφή: 'json' ή 'xml'
+        let currentStartDate = null;       // Ημερομηνία έναρξης φίλτρου
+        let currentEndDate = null;         // Ημερομηνία λήξης φίλτρου
+
+        // Δημιουργία URL για το API με τις τρέχουσες παραμέτρους
+        function buildApiUrl() {
+            let apiUrl = `public_announcements.php?format=${currentFormat}`;
+            if (currentStartDate) apiUrl += `&start_date=${currentStartDate}`;
+            if (currentEndDate) apiUrl += `&end_date=${currentEndDate}`;
+            // Cache-busting parameter
+            apiUrl += `&_t=${Date.now()}`;
+            return apiUrl;
+        }
+
+        // Ενημέρωση του συνδέσμου Feed με το τρέχον URL
+        function updateFeedLink() {
+            const feedLink = document.getElementById('feedLink');
+            const url = buildApiUrl();
+            feedLink.href = url;
+            feedLink.textContent = url;
+        }
+
+        // Ορισμός μορφής δεδομένων (JSON ή XML)
+        function setFormat(format) {
+            currentFormat = format;
+            const btnJson = document.getElementById('btn-json');
+            const btnXml = document.getElementById('btn-xml');
+
+            // Ενημέρωση εμφάνισης κουμπιών
+            if (format === 'json') {
+                btnJson.classList.replace('btn-outline-primary', 'btn-primary');
+                btnXml.classList.replace('btn-success', 'btn-outline-success');
+            } else {
+                btnJson.classList.replace('btn-primary', 'btn-outline-primary');
+                btnXml.classList.replace('btn-outline-success', 'btn-success');
+            }
+            loadAnnouncements();
+        }
+        
+        // Εφαρμογή φίλτρου ημερομηνίας
+        function applyDateFilter() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // Έλεγχος ότι η αρχική ημερομηνία δεν είναι μετά την τελική
+            if (startDate && endDate && startDate > endDate) {
+                alert('Η αρχική ημερομηνία δεν μπορεί να είναι μετά την τελική!');
+                return;
+            }
+            
+            // Ενημέρωση μεταβλητών και φόρτωση δεδομένων
+            currentStartDate = startDate || null;
+            currentEndDate = endDate || null;
+            loadAnnouncements();
+        }
+
+        // Καθαρισμός φίλτρου ημερομηνίας
+        function clearDateFilter() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            currentStartDate = null;
+            currentEndDate = null;
+            loadAnnouncements();
+        }
+        
+        // Φόρτωση ανακοινώσεων από το API
+        function loadAnnouncements() {
+            const container = document.getElementById('announcementsContainer');
+            
+            // Εμφάνιση loading spinner
+            container.innerHTML = `<div class="loading"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Φόρτωση...</p></div>`;
+            updateFeedLink();
+            const apiUrl = buildApiUrl();
+
+            // Κλήση API
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return currentFormat === 'xml' ? response.text() : response.json();
+                })
+                .then(data => {
+                    // Εμφάνιση δεδομένων ανάλογα με τη μορφή
+                    if (currentFormat === 'xml') displayXMLAnnouncements(data);
+                    else displayJSONAnnouncements(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    container.innerHTML = `<div class="alert alert-danger"><h5><i class="bi bi-exclamation-triangle"></i> Σφάλμα</h5><p>Δεν ήταν δυνατή η φόρτωση των ανακοινώσεων.</p></div>`;
+                });
+        }
+
+        // Εμφάνιση ανακοινώσεων σε JSON μορφή
+        function displayJSONAnnouncements(data) {
+            const container = document.getElementById('announcementsContainer');
+            
+            // Έλεγχος αν υπάρχουν ανακοινώσεις
+            if (!data.announcements || data.announcements.length === 0) {
+                container.innerHTML = `<div class="no-announcements"><i class="bi bi-inbox" style="font-size: 3rem;"></i><h4>Δεν βρέθηκαν ανακοινώσεις</h4></div>`;
+                return;
+            }
+            
+            // Δημιουργία HTML για όλες τις ανακοινώσεις
+            let html = `<h4 class="mb-3">Βρέθηκαν ${data.total} ανακοινώσεις</h4>`;
+            data.announcements.forEach(ann => html += createAnnouncementCard(ann.title, ann.presentation_date, ann.presentation_time, ann.presentation_location, ann.student, ann.supervisor));
+            container.innerHTML = html;
+        }
+
+        // Εμφάνιση ανακοινώσεων σε XML μορφή
+        function displayXMLAnnouncements(xmlText) {
+            const container = document.getElementById('announcementsContainer');
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            
+            // Έλεγχος για σφάλματα XML
+            if (xmlDoc.getElementsByTagName("parsererror").length) { 
+                throw new Error("Invalid XML"); 
+            }
+            
+            const announcements = xmlDoc.getElementsByTagName("announcement");
+            
+            // Έλεγχος αν υπάρχουν ανακοινώσεις
+            if (announcements.length === 0) {
+                container.innerHTML = `<div class="no-announcements"><i class="bi bi-inbox" style="font-size: 3rem;"></i><h4>Δεν βρέθηκαν ανακοινώσεις</h4></div>`;
+                return;
+            }
+            
+            // Δημιουργία HTML για όλες τις ανακοινώσεις
+            let html = `<h4 class="mb-3">Βρέθηκαν ${announcements.length} ανακοινώσεις</h4>`;
+            Array.from(announcements).forEach(ann => {
+                // Εξαγωγή δεδομένων φοιτητή
+                const student = { 
+                    name: getXMLText(ann, "student/name"), 
+                    surname: getXMLText(ann, "student/surname"), 
+                    student_number: getXMLText(ann, "student/student_number") 
+                };
+                
+                // Εξαγωγή δεδομένων επιβλέποντα
+                const supervisor = { 
+                    name: getXMLText(ann, "supervisor/name"), 
+                    surname: getXMLText(ann, "supervisor/surname") 
+                };
+                
+                // Δημιουργία κάρτας ανακοίνωσης
+                html += createAnnouncementCard(
+                    getXMLText(ann, "title"), 
+                    getXMLText(ann, "presentation_date"), 
+                    getXMLText(ann, "presentation_time"), 
+                    getXMLText(ann, "presentation_location"), 
+                    student, 
+                    supervisor
+                );
+            });
+            container.innerHTML = html;
+        }
+        
+        // Δημιουργία κάρτας ανακοίνωσης με όλες τις πληροφορίες
+        function createAnnouncementCard(title, date, time, location, student, supervisor) {
+            return `
+            <div class="announcement-card">
+                <div class="announcement-header"><h5 class="mb-0">${title}</h5></div>
+                <div class="announcement-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-calendar-event"></i> Παρουσίαση</h6>
+                            <p><strong>Ημερομηνία:</strong> ${formatDate(date)}</p>
+                            <p><strong>Ώρα:</strong> ${time || 'N/A'}</p>
+                            <p><strong>Τοποθεσία:</strong> ${location || 'N/A'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="student-info">
+                                <h6><i class="bi bi-person"></i> Φοιτητής/τρια</h6>
+                                <p><strong>Ονοματεπώνυμο:</strong> ${student.name} ${student.surname}</p>
+                                <p><strong>ΑΜ:</strong> ${student.student_number}</p>
+                            </div>
+                            <div class="supervisor-info">
+                                <h6><i class="bi bi-person-badge"></i> Επιβλέπων/ουσα</h6>
+                                <p><strong>Ονοματεπώνυμο:</strong> ${supervisor.name} ${supervisor.surname}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // Βοηθητική συνάρτηση για ανάγνωση XML elements
+        function getXMLText(parent, tagPath) {
+            const element = parent.querySelector(tagPath.replace('/', ' > '));
+            return element ? element.textContent : '';
+        }
+
+        // Μορφοποίηση ημερομηνίας στα ελληνικά
+        function formatDate(dateString) {
+            if (!dateString) return 'Δεν έχει οριστεί';
+            return new Date(dateString).toLocaleDateString('el-GR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        // Αρχικοποίηση σελίδας - φόρτωση ανακοινώσεων
+        document.addEventListener('DOMContentLoaded', loadAnnouncements);
+    </script>
+</body>
+</html>

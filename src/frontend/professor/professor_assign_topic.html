@@ -1,0 +1,44 @@
+<h3>Αρχική Ανάθεση Θέματος σε Φοιτητή</h3>
+
+<p>Αναζήτηση φοιτητή και ανάθεση ενός διαθέσιμου θέματος.</p>
+
+<form action="backend/handlers/handle_assign_topic.php" method="POST">
+    <div class="mb-3">
+        <label for="student" class="form-label">Αναζήτηση Φοιτητή (ΑΜ ή Ονοματεπώνυμο)</label>
+        <input type="text" class="form-control" id="student" name="student_identifier" required>
+    </div>
+    <div class="mb-3">
+        <label for="topic" class="form-label">Επιλογή Θέματος</label>
+        <select class="form-select" id="topic" name="topic_id" required>
+            <option selected disabled>Επιλέξτε ένα θέμα...</option>
+            </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Ανάθεση</button>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Κλήση AJAX για τη φόρτωση των θεμάτων
+    fetch('backend/api/get_assignable_topics.php')
+        .then(response => response.json())
+        .then(topics => {
+            const selectElement = document.getElementById('topic');
+            if (topics.length > 0) {
+                topics.forEach(topic => {
+                    const option = document.createElement('option');
+                    option.value = topic.id;
+                    option.textContent = topic.title;
+                    selectElement.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.disabled = true;
+                option.textContent = "Δεν υπάρχουν διαθέσιμα θέματα.";
+                selectElement.appendChild(option);
+            }
+        })
+        .catch(error => {
+            console.error('Σφάλμα κατά τη φόρτωση των θεμάτων:', error);
+        });
+});
+</script>

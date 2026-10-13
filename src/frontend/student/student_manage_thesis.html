@@ -1,0 +1,231 @@
+<h3>Διαχείριση Διπλωματικής Εργασίας</h3>
+<div id="management-container">
+    <p>Φόρτωση στοιχείων διαχείρισης...</p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('management-container');
+
+    fetch('backend/api/student_view_thesis.php')
+        .then(response => {
+            if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                container.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
+                return;
+            }
+
+            let content = `<h4>${data.title}</h4><p>Κατάσταση: <strong class="text-capitalize">${data.status.replace('_', ' ')}</strong></p>`;
+            
+            // Εμφάνιση συννημένου αρχείου περιγραφής αν υπάρχει
+            if (data.final_text_link) {
+                content += `
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-file-earmark-pdf"></i> Περιγραφή Θέματος</h6>
+                        <p class="mb-2">Ο καθηγητής έχει αναρτήσει λεπτομερή περιγραφή του θέματος διπλωματικής σας.</p>
+                        <a href="backend/api/view_topic_file.php?topic_id=${data.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-file-earmark-pdf"></i> Προβολή Περιγραφής Θέματος
+                        </a>
+                    </div>
+                `;
+            }
+            
+            content += `<hr>`;
+
+            switch (data.status) {
+                case 'under_assignment':
+                    // Μετράμε τις ενεργές προσκλήσεις (pending + accepted), όχι τις rejected
+                    const activeInvitations = data.committee ? data.committee.filter(member => 
+                        member.role === 'member' && 
+                        (member.invitation_status === 'pending' || member.invitation_status === 'accepted')
+                    ).length : 0;
+                    const remainingInvitations = 2 - activeInvitations;
+                    
+                    content += `
+                        <h5>Επιλογή Μελών Τριμελούς Επιτροπής</h5>
+                        <p>Έχεις ήδη επιβλέποντα. Επίλεξε τους <strong>δύο</strong> καθηγητές που επιθυμείς να είναι μέλη της επιτροπής σου.</p>
+                        <div class="alert alert-info">
+                            <strong>Ενεργές Προσκλήσεις:</strong> Έχεις ${activeInvitations}/2 ενεργές προσκλήσεις. 
+                            ${remainingInvitations > 0 ? `Μπορείς να στείλεις ακόμα ${remainingInvitations} προσκλήσεις.` : 'Έχεις φτάσει το όριο των ενεργών προσκλήσεων.'}
+                        </div>
+                        <form id="invite-form" ${remainingInvitations === 0 ? 'style="display:none;"' : ''}>
+                            <div class="mb-3">
+                                <label for="professors" class="form-label">Διαθέσιμοι Καθηγητές</label>
+                                <select id="professors" name="professor_id" class="form-select" required>
+                                    <option value="">Επιλέξτε καθηγητή...</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Αποστολή Πρόσκλησης</button>
+                        </form>
+                        <div id="invite-message" class="mt-3"></div>
+                    `;
+                    loadProfessors(data.committee || []);
+                    break;
+
+                case 'active':
+                    content += `
+                        <h5>Διπλωματική Ενεργή</h5>
+                        <p>Η διπλωματική σας είναι ενεργή! Η τριμελής επιτροπή έχει οριστεί.</p>
+                        <div class="alert alert-info">
+                            <strong>Επόμενο βήμα:</strong> Όταν ολοκληρώσετε την εργασία σας, ο επιβλέπων καθηγητής θα αλλάξει την κατάσταση σε "Υπό Εξέταση" για να μπορέσετε να υποβάλετε το πρόχειρο κείμενο.
+                        </div>
+                    `;
+                    break;
+
+                case 'under_review':
+                    content += `
+                        <h5>Ενέργειες για την Εξέταση</h5>
+                        <p>Συμπλήρωσε τα παρακάτω στοιχεία για την ολοκλήρωση της διπλωματικής σου.</p>
+                        <form id="materials-form" enctype="multipart/form-data">
+                            <input type="hidden" name="thesis_id" value="${data.id}">
+                            <input type="hidden" name="existing_draft_path" value="${data.draft_file_path || ''}">
+
+                            <div class="mb-3">
+                                <label for="draft_file" class="form-label">Πρόχειρο Κείμενο Διπλωματικής (Αρχείο PDF)</label>
+                                ${data.draft_file_path ? `
+                                    <div class="alert alert-info mb-2">
+                                        <h6><i class="bi bi-file-earmark-pdf"></i> Υπάρχον Αρχείο</h6>
+                                        <p class="mb-2">Έχετε ήδη ανεβάσει πρόχειρο κείμενο της διπλωματικής σας.</p>
+                                        <a href="backend/api/student_view_draft_file.php?thesis_id=${data.id}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-file-earmark-pdf"></i> Προβολή Πρόχειρου Κειμένου
+                                        </a>
+                                    </div>
+                                    <p class="small text-muted">Επιλέξτε νέο αρχείο για αντικατάσταση του υπάρχοντος.</p>
+                                ` : ''}
+                                <input type="file" class="form-control" id="draft_file" name="draft_file" accept=".pdf">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="material_links" class="form-label">Σύνδεσμοι προς Υλικό (π.χ. Google Drive, YouTube), ένας ανά γραμμή</label>
+                                <textarea class="form-control" id="material_links" name="material_links" rows="3">${data.material_links || ''}</textarea>
+                            </div>
+                            
+                            <hr>
+                            <h5>Στοιχεία Παρουσίασης</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="presentation_date" class="form-label">Ημερομηνία Εξέτασης</label>
+                                    <input type="date" class="form-control" id="presentation_date" name="presentation_date" value="${data.presentation_date || ''}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="presentation_time" class="form-label">Ώρα Εξέτασης</label>
+                                    <input type="time" class="form-control" id="presentation_time" name="presentation_time" value="${data.presentation_time || ''}">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="presentation_location" class="form-label">Αίθουσα ή Σύνδεσμος Online Παρουσίασης</label>
+                                <input type="text" class="form-control" id="presentation_location" name="presentation_location" value="${data.presentation_location || ''}">
+                            </div>
+
+                            <hr>
+                            <h5>Τελική Κατάθεση</h5>
+                             <div class="mb-3">
+                                <label for="nimertis_link" class="form-label">Σύνδεσμος στο Αποθετήριο "Νημερτής"</label>
+                                <input type="url" class="form-control" id="nimertis_link" name="nimertis_link" placeholder="https://nimertis.library.upatras.gr/..." value="${data.nimertis_link || ''}">
+                            </div>
+
+                            <button type="submit" class="btn btn-success">Αποθήκευση Αλλαγών</button>
+                        </form>
+                        <div id="materials-message" class="mt-3"></div>
+                    `;
+                    break;
+
+                case 'completed':
+                    content += '<div class="alert alert-success">Η διπλωματική σου έχει ολοκληρωθεί. Μπορείς μόνο να προβάλλεις τις πληροφορίες της από την αντίστοιχη σελίδα.</div>';
+                    break;
+                    
+                default:
+                    content += '<p>Δεν υπάρχουν διαθέσιμες ενέργειες για την τρέχουσα κατάσταση της διπλωματικής σου.</p>';
+            }
+            container.innerHTML = content;
+
+            if (data.status === 'under_assignment') {
+                document.getElementById('invite-form').addEventListener('submit', handleInviteSubmit);
+            }
+            if (data.status === 'under_review') {
+                document.getElementById('materials-form').addEventListener('submit', handleMaterialsSubmit);
+            }
+        })
+        .catch(error => {
+            container.innerHTML = '<div class="alert alert-danger">Παρουσιάστηκε ένα σφάλμα κατά την επικοινωνία με τον διακομιστή.</div>';
+            console.error('Fetch Error:', error);
+        });
+});
+
+function loadProfessors(committee) {
+    const committeeIds = committee.map(member => member.user_id);
+    fetch('backend/api/get_all_professors.php')
+        .then(response => response.json())
+        .then(professors => {
+            const select = document.getElementById('professors');
+            professors.forEach(prof => {
+                // Δεν εμφανίζουμε καθηγητές που είναι ήδη στην επιτροπή
+                if (!committeeIds.includes(prof.user_id)) {
+                    const option = document.createElement('option');
+                    option.value = prof.user_id;
+                    option.textContent = `${prof.name} ${prof.surname}`;
+                    select.appendChild(option);
+                }
+            });
+        });
+}
+
+function handleInviteSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const messageDiv = document.getElementById('invite-message');
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
+    fetch('backend/handlers/handle_committee_invitation.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageDiv.innerHTML = `<div class="alert alert-success">${data.message} Η σελίδα θα ανανεωθεί.</div>`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            submitButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        messageDiv.innerHTML = `<div class="alert alert-danger">Παρουσιάστηκε σφάλμα.</div>`;
+        console.error('Error:', error);
+        submitButton.disabled = false;
+    });
+}
+
+function handleMaterialsSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const messageDiv = document.getElementById('materials-message');
+    
+    messageDiv.innerHTML = '<p>Γίνεται αποθήκευση...</p>';
+
+    fetch('backend/handlers/student_submit_materials.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageDiv.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        messageDiv.innerHTML = '<div class="alert alert-danger">Παρουσιάστηκε σφάλμα.</div>';
+        console.error('Error:', error);
+    });
+}
+</script>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <!-- Σελίδα σύνδεσης στο σύστημα διπλωματικών εργασιών -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Σύνδεση στο Σύστημα</title>
+    <!-- Bootstrap CSS για responsive design -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
+    <style>
+        /* Στυλ για το body με background image */
+        body {
+            background-color: #f8f9fa; /* Εναλλακτικό background color */
+            background-image: url('assets/prytaneia.jpg'); /* Διαδρομή εικόνας background */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Overlay για καλύτερη εμφάνιση κειμένου */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: -1;
+        }
+        
+        /* Στυλ για την κάρτα σύνδεσης */
+        .card {
+            background-color: rgba(255, 255, 255, 0.6);
+            z-index: 1;
+        }
+        
+        /* Προσαρμοσμένο χρώμα για τους τίτλους */
+        .text-custom-color {
+            color: #e0471d; 
+        }
+        
+        /* Προσαρμοσμένο στυλ για το κουμπί σύνδεσης */
+        .btn-custom {
+            background-color: #e0471d; /* Κύριο χρώμα κουμπιού */
+            border-color: #e0471d;
+            color: #030202;
+        }
+        
+        /* Hover effect για το κουμπί */
+        .btn-custom:hover {
+            background-color: #af3818; /* Σκούροτερο χρώμα στο hover */
+            border-color: #af3818;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="d-flex flex-column justify-content-center align-items-center text-white" style="min-height: 100vh;">
+        <h1 class="display-4 fw-bold mb-4 text-custom-color">Σύστημα Διπλωματικών Εργασιών </h1>
+        <h2 class="display-4 fw-bold mb-4 text-custom-color">Logothetes </h2>
+
+        <div class="card p-4 shadow-lg" style="width: 25rem;">
+            <h2 class="text-center mb-4 text-dark">Σύνδεση στο Σύστημα</h2>
+            
+            <!-- Φόρμα σύνδεσης -->
+            <form action="login.php" method="POST">
+                <!-- Πεδίο ονόματος χρήστη -->
+                <div class="mb-3">
+                    <label for="username" class="form-label text-dark">Όνομα Χρήστη:</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                
+                <!-- Πεδίο κωδικού -->
+                <div class="mb-3">
+                    <label for="password" class="form-label text-dark">Κωδικός:</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                
+                <!-- Κουμπί υποβολής -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-custom">Είσοδος</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JavaScript για interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
