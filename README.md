@@ -86,6 +86,6 @@ The database contains **fictional demo data only**. All demo accounts use the pa
 | Name | GitHub |
 |---|---|
 | Aristea Tempelopoulou | [@AristeaTemp](https://github.com/AristeaTemp) |
-| Despina Papadopoulou | [@username](https://github.com/despinapap) |
+| Despina Papadopoulou | [@despinapap](https://github.com/despinapap) |
 
-Two-person team project (University of Patras, course "Programming and Systems on the World Wide Web", 2024-2025). Uploaded to GitHub after the course had ended.
+Two-person team project (University of Patras, course "Programming and Systems on the World Wide Web", 2024-2025).
